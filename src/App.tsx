@@ -81,7 +81,7 @@ function VideoPlayerPage() {
         src={playerUrl} 
         className="absolute inset-0 w-full h-full border-0"
         allowFullScreen
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock; display-capture"
         title="Video Player"
       />
     </div>
