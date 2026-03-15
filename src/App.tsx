@@ -13,12 +13,6 @@ function VideoPlayerPage() {
   const [searchParams] = useSearchParams();
   const [progressData, setProgressData] = useState<{ progress: number; timestamp: number; duration: number } | null>(null);
 
-  useEffect(() => {
-    if (!window.isSecureContext && window.location.hostname !== 'localhost') {
-      console.warn('AVISO: O player pode não funcionar corretamente em contextos não seguros (HTTP). Use HTTPS ou localhost.');
-    }
-  }, []);
-
   const themeColor = searchParams.get('color') || getSavedThemeColor();
   const optOverlay = searchParams.get('overlay') === 'true';
   const optNextBtn = searchParams.get('nextEpisode') === 'true';
@@ -45,12 +39,11 @@ function VideoPlayerPage() {
 
   const playerUrl = buildPlayerUrl(config);
 
-  // Watch Progress Tracking according to documentation
+  // Watch Progress Tracking
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      try {
-        // Documentation says messages are JSON strings
-        if (typeof event.data === 'string') {
+      if (typeof event.data === 'string') {
+        try {
           const data = JSON.parse(event.data);
           if (data && typeof data.progress === 'number') {
             setProgressData({
@@ -59,9 +52,7 @@ function VideoPlayerPage() {
               duration: data.duration || 0
             });
           }
-        }
-      } catch (e) {
-        // Message is not for us or not JSON
+        } catch (e) {}
       }
     };
     window.addEventListener('message', handleMessage);
@@ -70,36 +61,28 @@ function VideoPlayerPage() {
 
   return (
     <div className="fixed inset-0 bg-black z-[9999]">
-      {/* Back Button Overlay */}
       <div className="absolute top-0 left-0 right-0 p-4 pt-safe z-50 flex justify-between items-start pointer-events-none">
-        <motion.button 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+        <button 
           onClick={() => navigate(-1)}
           className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center gap-2 border border-white/10"
         >
           <ArrowLeft size={24} />
           <span className="hidden sm:inline font-medium">Voltar</span>
-        </motion.button>
+        </button>
 
         {progressData && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="pointer-events-auto bg-black/60 text-white px-4 py-2 rounded-lg backdrop-blur-md text-sm font-mono flex items-center gap-2 border border-white/10" style={{ borderColor: 'hsl(var(--primary) / 0.3)' }}>
+          <div className="pointer-events-auto bg-black/60 text-white px-4 py-2 rounded-lg backdrop-blur-md text-sm font-mono flex items-center gap-2 border border-white/10">
             <Activity size={16} className="text-[hsl(var(--primary))]" />
             <span>{(progressData.progress * 100).toFixed(2)}%</span>
-          </motion.div>
+          </div>
         )}
       </div>
       
-      {/* Player Iframe according to documentation */}
       <iframe 
-        key={playerUrl}
         src={playerUrl} 
-        className="absolute inset-0 w-full h-full border-0"
+        className="w-full h-full border-none"
         allowFullScreen
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+        allow="encrypted-media"
         title="Video Player"
       />
     </div>
@@ -111,21 +94,17 @@ function HomePage() {
   const navigate = useNavigate();
   const { type: urlType, id: urlId, season: urlSeason, episode: urlEpisode } = useParams();
   
-  // Form State
   const [contentType, setContentType] = useState(urlType || 'movie');
   const [contentId, setContentId] = useState(urlId || '299534');
   const [seasonNum, setSeasonNum] = useState(urlSeason || '1');
   const [episodeNum, setEpisodeNum] = useState(urlEpisode || '1');
   const [themeColor, setThemeColor] = useState(getSavedThemeColor());
-  
-  // Features State (matching doc param names)
   const [optOverlay, setOptOverlay] = useState(true);
   const [optNextBtn, setOptNextBtn] = useState(true);
   const [optAutoplayNext, setOptAutoplayNext] = useState(true);
   const [optEpisodeSelector, setOptEpisodeSelector] = useState(true);
   const [optDub, setOptDub] = useState(false);
 
-  // TMDB State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -136,7 +115,6 @@ function HomePage() {
     applyDynamicTheme(themeColor);
   }, [themeColor]);
 
-  // Sync with URL params and fetch details if needed
   useEffect(() => {
     if (urlType) setContentType(urlType);
     if (urlId) {
@@ -151,31 +129,17 @@ function HomePage() {
     if (urlEpisode) setEpisodeNum(urlEpisode);
   }, [urlType, urlId, urlSeason, urlEpisode]);
 
-  // Update URL in real-time when inputs change
   useEffect(() => {
     if (!contentId || (contentId === '299534' && !urlId)) return;
-
     let newPath = `/${contentType}/${contentId}`;
     if (contentType === 'tv' || contentType === 'anime-show') {
       newPath += `/${seasonNum || '1'}/${episodeNum || '1'}`;
     }
-    
-    // Only navigate if path actually changed
-    const currentPath = urlSeason ? `/${urlType}/${urlId}/${urlSeason}/${urlEpisode}` : `/${urlType}/${urlId}`;
-    if (newPath !== currentPath) {
+    const currentPath = window.location.hash.replace('#', '');
+    if (newPath !== currentPath && !currentPath.includes('/player/')) {
       navigate(newPath, { replace: true });
     }
   }, [contentType, contentId, seasonNum, episodeNum, navigate, urlType, urlId, urlSeason, urlEpisode]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSearchResults([]);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -197,13 +161,12 @@ function HomePage() {
 
   const handlePlay = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contentId) return alert('Por favor, selecione um conteúdo.');
+    if (!contentId) return alert('Selecione um conteúdo.');
 
-    let path = '';
-    if (contentType === 'movie') path = `/player/movie/${contentId}`;
-    else if (contentType === 'tv') path = `/player/tv/${contentId}/${seasonNum || '1'}/${episodeNum || '1'}`;
-    else if (contentType === 'anime-show') path = `/player/anime-show/${contentId}/${episodeNum || '1'}`;
-    else if (contentType === 'anime-movie') path = `/player/anime-movie/${contentId}`;
+    let path = `/player/${contentType}/${contentId}`;
+    if (contentType === 'tv' || contentType === 'anime-show') {
+      path = `/player/${contentType}/${contentId}/${seasonNum || '1'}/${episodeNum || '1'}`;
+    }
 
     const params = new URLSearchParams();
     if (themeColor) params.append('color', themeColor);
@@ -218,22 +181,10 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-[hsl(var(--primary)/0.3)] relative overflow-x-hidden">
-      {/* Background Banner */}
       <AnimatePresence>
         {selectedContent?.backdrop_path && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.3 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="fixed inset-0 w-screen h-screen z-0 pointer-events-none overflow-hidden"
-          >
-            <img 
-              src={getTMDBBackdropUrl(selectedContent.backdrop_path)} 
-              className="w-full h-full object-cover"
-              style={{ objectPosition: 'center 20%' }}
-              alt="Background"
-            />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.3 }} exit={{ opacity: 0 }} transition={{ duration: 0.8 }} className="fixed inset-0 w-screen h-screen z-0 pointer-events-none overflow-hidden">
+            <img src={getTMDBBackdropUrl(selectedContent.backdrop_path)} className="w-full h-full object-cover" style={{ objectPosition: 'center 20%' }} alt="Background" />
             <div className="absolute inset-0 bg-zinc-950/40" />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/20 via-transparent to-transparent" />
@@ -241,31 +192,26 @@ function HomePage() {
         )}
       </AnimatePresence>
 
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-colors duration-1000" style={{ backgroundColor: 'hsl(var(--primary) / 0.15)' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-colors duration-1000" style={{ backgroundColor: 'hsl(var(--primary-accent) / 0.1)' }} />
-      </div>
-
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 text-xl font-bold tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-accent)))' }}>
+        <div className="flex items-center gap-2 text-xl font-bold tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-accent)))' }}>
             <Play size={20} className="text-white fill-white ml-1" />
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 font-display">StreamPlay</span>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4">
+        </div>
+        <div className="flex items-center gap-4">
           <a href="https://github.com/suntzar/streamplay" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-all"><Github size={20} /></a>
           <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center cursor-pointer"><User size={20} className="text-zinc-400" /></div>
-        </motion.div>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto relative z-10">
         <div className="w-full lg:w-1/2 p-8 lg:p-16 flex flex-col justify-center">
           <div className="space-y-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border text-xs font-bold uppercase tracking-widest transition-colors" style={{ borderColor: 'hsl(var(--primary) / 0.3)', color: 'hsl(var(--primary))' }}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border text-xs font-bold uppercase tracking-widest transition-colors" style={{ borderColor: 'hsl(var(--primary) / 0.3)', color: 'hsl(var(--primary))' }}>
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'currentColor' }} />
               Configuração Profissional
-            </motion.div>
+            </div>
 
             <AnimatePresence mode="wait">
               {selectedContent ? (
@@ -296,7 +242,7 @@ function HomePage() {
         </div>
 
         <div className="w-full lg:w-1/2 p-6 lg:p-12 flex items-center justify-center">
-          <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-2xl shadow-2xl relative overflow-visible">
+          <div className="w-full max-w-lg bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-2xl shadow-2xl relative overflow-visible">
             <form onSubmit={handlePlay} className="space-y-8">
               <div ref={searchRef} className="space-y-3 relative">
                 <label className="text-sm font-bold text-zinc-400 flex items-center gap-2 px-1"><Search size={16} className="text-[hsl(var(--primary))]" /> LOCALIZAR CONTEÚDO</label>
@@ -352,16 +298,14 @@ function HomePage() {
                 
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    {[{ id: 'overlay', label: 'Overlay Netflix', state: optOverlay, set: setOptOverlay }, { id: 'selector', label: 'Seletor Ep.', state: optEpisodeSelector, set: setOptEpisodeSelector }].map((opt) => (
-                      <button key={opt.id} type="button" onClick={() => opt.set(!opt.state)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: opt.state ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: opt.state ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${opt.state ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>{opt.label}</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${opt.state ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: opt.state ? 'hsl(var(--primary))' : undefined }} /></button>
-                    ))}
+                    <button type="button" onClick={() => setOptOverlay(!optOverlay)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: optOverlay ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: optOverlay ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${optOverlay ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>Overlay Netflix</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${optOverlay ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: optOverlay ? 'hsl(var(--primary))' : undefined }} /></button>
+                    <button type="button" onClick={() => setOptEpisodeSelector(!optEpisodeSelector)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: optEpisodeSelector ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: optEpisodeSelector ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${optEpisodeSelector ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>Seletor Ep.</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${optEpisodeSelector ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: optEpisodeSelector ? 'hsl(var(--primary))' : undefined }} /></button>
                   </div>
                   
                   {(contentType === 'tv' || contentType === 'anime-show') && (
                     <div className="grid grid-cols-2 gap-3">
-                      {[{ id: 'next', label: 'Botão Próximo', state: optNextBtn, set: setOptNextBtn }, { id: 'auto', label: 'Autoplay Prox', state: optAutoplayNext, set: setOptAutoplayNext }].map((opt) => (
-                        <button key={opt.id} type="button" onClick={() => opt.set(!opt.state)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: opt.state ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: opt.state ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${opt.state ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>{opt.label}</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${opt.state ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: opt.state ? 'hsl(var(--primary))' : undefined }} /></button>
-                      ))}
+                      <button type="button" onClick={() => setOptNextBtn(!optNextBtn)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: optNextBtn ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: optNextBtn ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${optNextBtn ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>Botão Próximo</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${optNextBtn ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: optNextBtn ? 'hsl(var(--primary))' : undefined }} /></button>
+                      <button type="button" onClick={() => setOptAutoplayNext(!optAutoplayNext)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: optAutoplayNext ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: optAutoplayNext ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${optAutoplayNext ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>Autoplay Prox</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${optAutoplayNext ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: optAutoplayNext ? 'hsl(var(--primary))' : undefined }} /></button>
                     </div>
                   )}
                   
@@ -376,7 +320,7 @@ function HomePage() {
                 <Play size={24} className="fill-white" /> ASSISTIR AGORA
               </motion.button>
             </form>
-          </motion.div>
+          </div>
         </div>
       </main>
 

@@ -1,25 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: file: gap:; frame-src 'self' https://player.videasy.net; img-src * data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><path d='M40 30l30 20-30 20z' fill='white'/></svg>">
+    <!-- CSP simplificada e idêntica ao exemplo funcional -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: file:; frame-src 'self' https://player.videasy.net;" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
     <title>StreamPlay</title>
   </head>
   <body class="bg-zinc-950 text-zinc-50 antialiased selection:bg-indigo-500/30">
     <div id="root"></div>
-    <script>
-      // Só carrega o cordova.js se estiver em ambiente de arquivo (App Nativo) ou via VoltBuilder
-      if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' && window.location.port === '') {
-        var script = document.createElement('script');
-        script.src = 'cordova.js';
-        document.body.appendChild(script);
-      }
-    </script>
+    <!-- Carregamento incondicional como no exemplo funcional -->
+    <script src="cordova.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
