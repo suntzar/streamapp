@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HashRouter, Routes, Route, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Search, User, ArrowLeft, Settings2, Tv, Film, Clapperboard, Activity, Loader2, Calendar, Github, Info, Star, ChevronRight, X } from 'lucide-react';
 import { buildPlayerUrl, PlayerConfig } from './utils/urlBuilder';
@@ -15,8 +15,6 @@ function VideoPlayerPage() {
 
   const themeColor = searchParams.get('color') || getSavedThemeColor();
   const optOverlay = searchParams.get('overlay') === 'true';
-  const optNextBtn = searchParams.get('next') === 'true';
-  const optAutoplayNext = searchParams.get('auto') === 'true';
   const optEpisodeSelector = searchParams.get('selector') === 'true';
   const optDub = searchParams.get('dub') === 'true';
 
@@ -31,8 +29,6 @@ function VideoPlayerPage() {
     episodeNum: episode,
     themeColor,
     optOverlay,
-    optNextBtn,
-    optAutoplayNext,
     optEpisodeSelector,
     optDub,
   };
@@ -123,7 +119,6 @@ function HomePage() {
     if (urlType) setContentType(urlType);
     if (urlId) {
       setContentId(urlId);
-      // Fetch details only if we don't have them or they are different
       getContentDetails(urlType || 'movie', urlId).then(details => {
         if (details) setSelectedContent(details);
       });
@@ -157,7 +152,6 @@ function HomePage() {
     setContentType(result.media_type);
     setSearchResults([]);
     setSearchQuery('');
-    // Update URL without full navigation
     navigate(`/${result.media_type}/${result.id}`, { replace: true });
   };
 
@@ -337,8 +331,11 @@ function HomePage() {
 }
 
 // --- APP ROOT COM ROUTER ---
-export default function App() {
-  // Cordova Initialization
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Cordova Initialization & Back Button Handling
   useEffect(() => {
     const handleDeviceReady = () => {
       console.log('App pronto. Proteções ativas.');
@@ -346,19 +343,46 @@ export default function App() {
         console.log('Pop-up bloqueado: ' + url);
         return null;
       };
+
+      // Escuta o botão físico de voltar do Android/Cordova
+      document.addEventListener("backbutton", onBackKeyDown, false);
     };
+
+    const onBackKeyDown = (e: any) => {
+      e.preventDefault();
+      
+      // Se não estiver na home, volta um path no histórico do router
+      if (location.pathname !== "/") {
+        navigate(-1);
+      } else {
+        // Se estiver na home, fecha o aplicativo (comportamento padrão Android)
+        if ((navigator as any).app) {
+          (navigator as any).app.exitApp();
+        }
+      }
+    };
+
     document.addEventListener('deviceready', handleDeviceReady, false);
-    return () => document.removeEventListener('deviceready', handleDeviceReady);
-  }, []);
+    return () => {
+      document.removeEventListener('deviceready', handleDeviceReady);
+      document.removeEventListener('backbutton', onBackKeyDown);
+    };
+  }, [location, navigate]);
 
   return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/:type/:id" element={<HomePage />} />
+      <Route path="/player/:type/:id" element={<VideoPlayerPage />} />
+      <Route path="/player/:type/:id/:season/:episode" element={<VideoPlayerPage />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
     <HashRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/:type/:id" element={<HomePage />} />
-        <Route path="/player/:type/:id" element={<VideoPlayerPage />} />
-        <Route path="/player/:type/:id/:season/:episode" element={<VideoPlayerPage />} />
-      </Routes>
+      <AppContent />
     </HashRouter>
   );
 }
