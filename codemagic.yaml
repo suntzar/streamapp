@@ -2,32 +2,38 @@ workflows:
   android-hybrid-app:
     name: StreamPlay Android Hybrid
     max_build_duration: 60
-    instance_type: mac_mini_m1
+    instance_type: linux_x2
     environment:
       node: 20
       groups:
-        - google_play # Opcional: para publicar depois
+        - google_play
       vars:
         PACKAGE_NAME: "com.streamplay.app"
     scripts:
       - name: Install dependencies
         script: |
           npm install
-          npm install -g cordova
+          npm install -g cordova@12.0.0
       - name: Build Web Project
         script: |
           npm run build
+          # Move o build do Vite para a pasta que o Cordova usa
+          rm -rf www/*
+          cp -r dist/* www/
       - name: Setup Cordova
         script: |
-          # Adiciona a plataforma Android
-          cordova platform add android --no-fetch
-          # Garante que os plugins estão instalados
-          cordova plugin add cordova-plugin-device
-          cordova plugin add cordova-plugin-inappbrowser
-          cordova plugin add https://github.com/ollm/cordova-plugin-dynamic-color
+          # Limpa diretórios para evitar corrupção
+          rm -rf platforms/ plugins/
+          # Adiciona a plataforma Android estável
+          cordova platform add android@12.0.1
+          # Instala os plugins de forma sequencial e limpa
+          cordova plugin add cordova-plugin-device --save
+          cordova plugin add cordova-plugin-inappbrowser --save
+          cordova plugin add https://github.com/ollm/cordova-plugin-dynamic-color --save
       - name: Build Android APK
         script: |
-          cordova build android --release --no-interactive
+          # Define o caminho do Java se necessário (Codemagic Linux já vem pronto)
+          cordova build android --release --no-interactive -- --packageType=apk
     artifacts:
       - platforms/android/app/build/outputs/apk/release/*.apk
     publishing:
