@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:cdv="http://cordova.apache.org/ns/1.0"
+        id="com.streamplay.app"
+        version="1.0.0">
+
+  <name>StreamPlay</name>
+  <description>Configurador e Player Videasy Customizado</description>
+  <author email="contato@ironcripto.com" href="https://ironcripto.com">StreamPlay Team</author>
+
+  <access origin="*" />
+
+  <allow-navigation href="file:///*" />
+  <allow-navigation href="https://player.videasy.net/*" />
+
+  <!-- Preferências Cordova -->
+  <preference name="SplashScreenDelay" value="3000" />
+  <preference name="FadeSplashScreenDuration" value="500" />
+  <preference name="SplashScreenBackgroundColor" value="#09090b" />
+  <preference name="StatusBarStyle" value="lightcontent" />
+  <preference name="StatusBarBackgroundColor" value="#09090b" />
+  <preference name="DisallowOverscroll" value="true" />
+  <preference name="Orientation" value="portrait" />
+
+  <platform name="ios">
+    <preference name="StatusBarOverlaysWebView" value="true" />
+  </platform>
+
+  <platform name="android">
+    <preference name="AndroidWindowSplashScreenBackground" value="#09090b" />
+    <!-- Android notch / safe area support -->
+    <preference name="StatusBarOverlaysWebView" value="true" />
+  </platform>
+
+  <plugin name="cordova-plugin-device" spec="^3.0.0" />
+  <plugin name="cordova-plugin-statusbar" spec="^3.0.0" />
+  <plugin name="cordova-plugin-splashscreen" spec="^6.0.2" />
+  <plugin name="cordova-plugin-inappbrowser" spec="~5.0.0" />
+</widget>

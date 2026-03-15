@@ -19,6 +19,23 @@ export default function App() {
   const [optEpisodeSelector, setOptEpisodeSelector] = useState(false);
   const [optDub, setOptDub] = useState(false);
 
+  // Cordova/VoltBuilder Initialization
+  useEffect(() => {
+    const handleDeviceReady = () => {
+      console.log('App pronto. Proteções ativas.');
+      // Bloqueia tentativas do Videasy de abrir novas abas de anúncios
+      window.open = (url) => {
+        console.log('Pop-up bloqueado: ' + url);
+        return null;
+      };
+    };
+
+    document.addEventListener('deviceready', handleDeviceReady, false);
+    return () => {
+      document.removeEventListener('deviceready', handleDeviceReady);
+    };
+  }, []);
+
   // Message Listener for Player Progress
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
