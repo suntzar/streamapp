@@ -34,7 +34,7 @@ export function applyDynamicTheme(hexColor: string) {
   if (!hexColor) return;
   
   // Normalizar hex
-  const cleanHex = hexColor.startsWith('#') ? hexColor : `#${hexColor}`;
+  const cleanHex = hexColor.startsWith('#') ? hexColor : `#${cleanHexWithoutHash(hexColor)}`;
   const rgb = hexToRgb(cleanHex);
   if (!rgb) return;
 
@@ -46,11 +46,39 @@ export function applyDynamicTheme(hexColor: string) {
   // Tons derivados (Material-like logic simplificada)
   root.style.setProperty('--primary-muted', `${hsl.h} ${hsl.s * 0.5}% ${Math.min(hsl.l * 1.5, 30)}%`);
   root.style.setProperty('--primary-accent', `${hsl.h} ${Math.min(hsl.s + 20, 100)}% ${Math.max(hsl.l - 10, 20)}%`);
-  
-  // Salvar preferência
-  localStorage.setItem('streamplay-theme-color', hexColor.replace('#', ''));
 }
 
+function cleanHexWithoutHash(hex: string): string {
+  return hex.replace('#', '');
+}
+
+export function saveThemePreference(color: string, useMaterialYou: boolean) {
+  localStorage.setItem('streamplay-theme-color', cleanHexWithoutHash(color));
+  localStorage.setItem('streamplay-use-material-you', String(useMaterialYou));
+}
+
+export function getThemePreference(): { color: string; useMaterialYou: boolean } {
+  return {
+    color: localStorage.getItem('streamplay-theme-color') || '6366f1',
+    useMaterialYou: localStorage.getItem('streamplay-use-material-you') === 'true'
+  };
+}
+
+export async function getMaterialYouColor(): Promise<string | null> {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && (window as any).DynamicColor) {
+      (window as any).DynamicColor.colors((colors: any) => {
+        resolve(colors.primary || null);
+      }, () => {
+        resolve(null);
+      });
+    } else {
+      resolve(null);
+    }
+  });
+}
+
+// Deprecated: used getThemePreference instead for better control
 export function getSavedThemeColor(): string {
-  return localStorage.getItem('streamplay-theme-color') || '6366f1'; // Default indigo-500
+  return localStorage.getItem('streamplay-theme-color') || '6366f1';
 }

@@ -4,11 +4,28 @@ import HomePage from './pages/HomePage';
 import DetailsPage from './pages/DetailsPage';
 import PlayerPage from './pages/PlayerPage';
 import SettingsPage from './pages/SettingsPage';
+import { applyDynamicTheme, getThemePreference, getMaterialYouColor } from './utils/theme';
 
 // --- APP CONTENT WRAPPER ---
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Global Theme Initialization
+  useEffect(() => {
+    async function initTheme() {
+      const prefs = getThemePreference();
+      if (prefs.useMaterialYou) {
+        const m3Color = await getMaterialYouColor();
+        if (m3Color) {
+          applyDynamicTheme(m3Color);
+          return;
+        }
+      }
+      applyDynamicTheme(prefs.color);
+    }
+    initTheme();
+  }, []);
 
   useEffect(() => {
     const handleDeviceReady = () => {

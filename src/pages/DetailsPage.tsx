@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Play, Settings2, Calendar, Star, Info, Tv, Film, Clapperboard, User } from 'lucide-react';
 import { TMDBResult, getContentDetails, getTMDBImageUrl, getTMDBBackdropUrl } from '../utils/tmdb';
-import { applyDynamicTheme, getSavedThemeColor } from '../utils/theme';
+import { getThemePreference } from '../utils/theme';
 
 export default function DetailsPage() {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ export default function DetailsPage() {
   
   const [content, setContent] = useState<TMDBResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [themeColor, setThemeColor] = useState(getSavedThemeColor());
+  const [themeColor] = useState(getThemePreference().color);
 
   // Player Options
   const [seasonNum, setSeasonNum] = useState('1');
@@ -21,14 +21,13 @@ export default function DetailsPage() {
   const [optDub, setOptDub] = useState(false);
 
   useEffect(() => {
-    applyDynamicTheme(themeColor);
     if (type && id) {
       getContentDetails(type, id).then(details => {
         setContent(details);
         setIsLoading(false);
       });
     }
-  }, [type, id, themeColor]);
+  }, [type, id]);
 
   const handlePlay = () => {
     let path = `/player/${type}/${id}`;

@@ -3,19 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Search, User, Loader2, Github, ChevronRight } from 'lucide-react';
 import { searchContent, TMDBResult, getTMDBImageUrl } from '../utils/tmdb';
-import { applyDynamicTheme, getSavedThemeColor } from '../utils/theme';
+import { getThemePreference } from '../utils/theme';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [themeColor] = useState(getSavedThemeColor());
+  const [themeColor] = useState(getThemePreference().color);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    applyDynamicTheme(themeColor);
-  }, [themeColor]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

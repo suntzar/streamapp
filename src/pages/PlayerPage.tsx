@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { buildPlayerUrl } from '../utils/urlBuilder';
 import { TMDBResult, getContentDetails, getTMDBBackdropUrl } from '../utils/tmdb';
-import { applyDynamicTheme, getSavedThemeColor } from '../utils/theme';
+import { getThemePreference } from '../utils/theme';
 
 export default function PlayerPage() {
   const navigate = useNavigate();
@@ -13,19 +13,18 @@ export default function PlayerPage() {
   const [content, setContent] = useState<TMDBResult | null>(null);
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
 
-  const themeColor = searchParams.get('color') || getSavedThemeColor();
+  const themeColor = searchParams.get('color') || getThemePreference().color;
   const optOverlay = searchParams.get('overlay') === 'true';
   const optEpisodeSelector = searchParams.get('selector') === 'true';
   const optDub = searchParams.get('dub') === 'true';
 
   useEffect(() => {
-    applyDynamicTheme(themeColor);
     if (type && id) {
       getContentDetails(type, id).then(details => {
         if (details) setContent(details);
       });
     }
-  }, [type, id, themeColor]);
+  }, [type, id]);
 
   const playerUrl = buildPlayerUrl({
     contentType: type || 'movie',
