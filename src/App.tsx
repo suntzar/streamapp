@@ -91,13 +91,13 @@ function VideoPlayerPage() {
 // --- COMPONENTE HOME ---
 function HomePage() {
   const navigate = useNavigate();
-  const { type: urlType, id: urlId } = useParams();
+  const { type: urlType, id: urlId, season: urlSeason, episode: urlEpisode } = useParams();
   
   // Form State
   const [contentType, setContentType] = useState(urlType || 'movie');
   const [contentId, setContentId] = useState(urlId || '299534');
-  const [seasonNum, setSeasonNum] = useState('');
-  const [episodeNum, setEpisodeNum] = useState('');
+  const [seasonNum, setSeasonNum] = useState(urlSeason || '');
+  const [episodeNum, setEpisodeNum] = useState(urlEpisode || '');
   const [themeColor, setThemeColor] = useState(getSavedThemeColor());
   const [optOverlay, setOptOverlay] = useState(false);
   const [optEpisodeSelector, setOptEpisodeSelector] = useState(false);
@@ -125,7 +125,27 @@ function HomePage() {
     } else {
       setSelectedContent(null);
     }
-  }, [urlType, urlId]);
+    if (urlSeason) setSeasonNum(urlSeason);
+    if (urlEpisode) setEpisodeNum(urlEpisode);
+  }, [urlType, urlId, urlSeason, urlEpisode]);
+
+  // Update URL in real-time when inputs change
+  useEffect(() => {
+    if (!contentId || contentId === '299534' && !urlId) return; // Don't update for initial demo unless specifically navigated
+
+    let newPath = `/${contentType}/${contentId}`;
+    if (contentType === 'tv' || contentType === 'anime-show') {
+      if (seasonNum || episodeNum) {
+        newPath += `/${seasonNum || '1'}/${episodeNum || '1'}`;
+      }
+    }
+    
+    // Only navigate if path actually changed to avoid loop
+    const currentPath = urlSeason ? `/${urlType}/${urlId}/${urlSeason}/${urlEpisode}` : `/${urlType}/${urlId}`;
+    if (newPath !== currentPath) {
+      navigate(newPath, { replace: true });
+    }
+  }, [contentType, contentId, seasonNum, episodeNum, navigate, urlType, urlId, urlSeason, urlEpisode]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -152,6 +172,7 @@ function HomePage() {
     setContentType(result.media_type);
     setSearchResults([]);
     setSearchQuery('');
+    // Initial selection path
     navigate(`/${result.media_type}/${result.id}`, { replace: true });
   };
 
@@ -373,6 +394,7 @@ function AppContent() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/:type/:id" element={<HomePage />} />
+      <Route path="/:type/:id/:season/:episode" element={<HomePage />} />
       <Route path="/player/:type/:id" element={<VideoPlayerPage />} />
       <Route path="/player/:type/:id/:season/:episode" element={<VideoPlayerPage />} />
     </Routes>
