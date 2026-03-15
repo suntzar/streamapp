@@ -175,18 +175,20 @@ export default function App() {
         {selectedContent?.backdrop_path && (
           <motion.div 
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
+            animate={{ opacity: 0.3 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className="fixed inset-0 z-0 pointer-events-none"
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 w-screen h-screen z-0 pointer-events-none overflow-hidden"
           >
             <img 
               src={getTMDBBackdropUrl(selectedContent.backdrop_path)} 
-              className="w-full h-full object-cover scale-105"
+              className="w-full h-full object-cover"
+              style={{ objectPosition: 'center 20%' }}
               alt="Background"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-transparent to-zinc-950" />
+            <div className="absolute inset-0 bg-zinc-950/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/20 via-transparent to-transparent" />
           </motion.div>
         )}
       </AnimatePresence>
