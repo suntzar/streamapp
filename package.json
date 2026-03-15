@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "build:volt": "npm run build && rm -rf volt_build && mkdir -p volt_build/www && cp -r dist/* volt_build/www/ && cp config.xml voltbuilder.json volt_build/ && cp -r resources volt_build/ && cd volt_build && zip -r ../app_voltbuilder.zip . && cd .. && rm -rf volt_build"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
