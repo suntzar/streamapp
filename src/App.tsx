@@ -234,7 +234,7 @@ export default function App() {
                       />
                     </motion.div>
                     <div className="space-y-3">
-                      <h1 className="text-4xl lg:text-5xl font-black tracking-tight leading-tight font-display">
+                      <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight font-display">
                         {selectedContent.title || selectedContent.name}
                       </h1>                      <div className="flex flex-wrap items-center gap-3 text-zinc-400">
                         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 text-sm font-medium">
@@ -266,7 +266,7 @@ export default function App() {
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-6"
                 >
-                  <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[1.1] font-display">
+                  <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tighter leading-[1.1] font-display">
                     O Cinema na <br/>
                     <span className="text-transparent bg-clip-text transition-all duration-1000" style={{ backgroundImage: 'linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary-accent)), hsl(var(--primary)))', backgroundSize: '200% auto' }}>
                       Sua Mão
@@ -354,7 +354,7 @@ export default function App() {
                             </div>
                             <div className="flex items-center gap-3 text-sm text-zinc-500">
                               <span className="font-mono">{(result.release_date || result.first_air_date || '').substring(0, 4)}</span>
-                              <span className="px-2 py-0.5 rounded-md text-[10px] uppercase font-black transition-colors" style={{ backgroundColor: 'hsl(var(--primary-muted) / 0.2)', color: 'hsl(var(--primary))' }}>
+                              <span className="px-2 py-0.5 rounded-md text-[10px] uppercase font-bold transition-colors" style={{ backgroundColor: 'hsl(var(--primary-muted) / 0.2)', color: 'hsl(var(--primary))' }}>
                                 {result.media_type === 'movie' ? 'Filme' : 'Série'}
                               </span>
                             </div>
@@ -396,7 +396,7 @@ export default function App() {
                       className="grid grid-cols-2 gap-4"
                     >
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-zinc-500 uppercase px-1">Temporada</label>
+                        <label className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase px-1">Temporada</label>
                         <input
                           type="number"
                           min="1"
@@ -407,7 +407,7 @@ export default function App() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-zinc-500 uppercase px-1">Episódio</label>
+                        <label className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase px-1">Episódio</label>
                         <input
                           type="number"
                           min="1"
@@ -475,7 +475,7 @@ export default function App() {
                 whileHover={{ scale: 1.02, brightness: 1.1 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="w-full py-5 px-8 rounded-2xl font-black text-xl tracking-tight transition-all shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] flex items-center justify-center gap-3 relative overflow-hidden group font-display"
+                className="w-full py-5 px-8 rounded-2xl font-bold text-xl tracking-tight transition-all shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] flex items-center justify-center gap-3 relative overflow-hidden group font-display"
                 style={{ 
                   backgroundColor: 'hsl(var(--primary))', 
                   color: 'white'
