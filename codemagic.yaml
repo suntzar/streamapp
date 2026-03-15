@@ -1,0 +1,39 @@
+workflows:
+  android-hybrid-app:
+    name: StreamPlay Android Hybrid
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      node: 20
+      groups:
+        - google_play # Opcional: para publicar depois
+      vars:
+        PACKAGE_NAME: "com.streamplay.app"
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          npm install -g cordova
+      - name: Build Web Project
+        script: |
+          npm run build
+      - name: Setup Cordova
+        script: |
+          # Adiciona a plataforma Android
+          cordova platform add android --no-fetch
+          # Garante que os plugins estão instalados
+          cordova plugin add cordova-plugin-device
+          cordova plugin add cordova-plugin-inappbrowser
+          cordova plugin add https://github.com/ollm/cordova-plugin-dynamic-color
+      - name: Build Android APK
+        script: |
+          cordova build android --release --no-interactive
+    artifacts:
+      - platforms/android/app/build/outputs/apk/release/*.apk
+    publishing:
+      email:
+        recipients:
+          - contato@ironcripto.com
+        notify:
+          success: true
+          failure: true
