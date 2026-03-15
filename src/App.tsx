@@ -19,22 +19,11 @@ export default function App() {
   const [optEpisodeSelector, setOptEpisodeSelector] = useState(false);
   const [optDub, setOptDub] = useState(false);
 
-  // Security: Override window.open for mobile/container environments
-  useEffect(() => {
-    const originalOpen = window.open;
-    window.open = function() {
-      console.warn('Blocked popup attempt by window.open');
-      return null;
-    };
-    return () => {
-      window.open = originalOpen;
-    };
-  }, []);
-
   // Message Listener for Player Progress
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
+        // According to documentation, messages are sent as JSON strings
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (data && typeof data.progress === 'number') {
           setProgressData({
@@ -44,7 +33,7 @@ export default function App() {
           });
         }
       } catch (e) {
-        // Safely ignore non-JSON messages
+        // Ignorar mensagens não formatadas ou erros de parsing
       }
     };
 
@@ -81,16 +70,17 @@ export default function App() {
   const handleBack = () => {
     setIsPlaying(false);
     setPlayerUrl('');
+    setProgressData(null);
   };
 
   if (isPlaying) {
     return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col">
-        {/* Safe area top for mobile notches */}
-        <div className="absolute top-0 left-0 right-0 p-4 pt-safe z-10 flex justify-between items-start pointer-events-none">
+      <div className="fixed inset-0 bg-black z-[9999]">
+        {/* Controls Overlay */}
+        <div className="absolute top-0 left-0 right-0 p-4 pt-safe z-50 flex justify-between items-start pointer-events-none">
           <button 
             onClick={handleBack}
-            className="pointer-events-auto bg-black/50 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center gap-2"
+            className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center gap-2 border border-white/10"
             aria-label="Voltar para configuração"
           >
             <ArrowLeft size={24} />
@@ -106,9 +96,11 @@ export default function App() {
         </div>
         
         <iframe 
+          key={playerUrl}
           src={playerUrl} 
-          className="w-full h-full border-0"
+          className="absolute inset-0 w-full h-full border-0"
           allowFullScreen
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           title="Video Player"
         />
       </div>

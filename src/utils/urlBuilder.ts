@@ -15,17 +15,20 @@ export function buildPlayerUrl(config: PlayerConfig): string {
   const baseUrl = 'https://player.videasy.net';
   let path = '';
 
-  const id = config.contentId || '0';
+  // Sanitize ID and numbers to avoid broken URLs
+  const id = encodeURIComponent((config.contentId || '').trim());
+  const season = encodeURIComponent((config.seasonNum || '1').trim());
+  const episode = encodeURIComponent((config.episodeNum || '1').trim());
 
   switch (config.contentType) {
     case 'movie':
       path = `/movie/${id}`;
       break;
     case 'tv':
-      path = `/tv/${id}/${config.seasonNum || '1'}/${config.episodeNum || '1'}`;
+      path = `/tv/${id}/${season}/${episode}`;
       break;
     case 'anime-show':
-      path = `/anime/${id}/${config.episodeNum || '1'}`;
+      path = `/anime/${id}/${episode}`;
       break;
     case 'anime-movie':
       path = `/anime/${id}`;
@@ -36,15 +39,29 @@ export function buildPlayerUrl(config: PlayerConfig): string {
 
   const url = new URL(`${baseUrl}${path}`);
 
-  if (config.optDub) url.searchParams.append('dub', 'true');
+  // Parâmetros Globais (Filmes, Séries e Animes)
   if (config.themeColor) {
     const color = config.themeColor.replace('#', '');
-    if (color) url.searchParams.append('color', color);
+    if (color && color.length >= 3) url.searchParams.append('color', color);
   }
-  if (config.optOverlay) url.searchParams.append('overlay', 'true');
-  if (config.optNextBtn) url.searchParams.append('nextEpisode', 'true');
-  if (config.optAutoplayNext) url.searchParams.append('autoplayNextEpisode', 'true');
-  if (config.optEpisodeSelector) url.searchParams.append('episodeSelector', 'true');
+  
+  if (config.optOverlay) {
+    url.searchParams.append('overlay', 'true');
+  }
+
+  // Parâmetros Específicos para Séries e Animes (Episódios)
+  const isEpisodic = config.contentType === 'tv' || config.contentType === 'anime-show';
+  
+  if (isEpisodic) {
+    if (config.optNextBtn) url.searchParams.append('nextEpisode', 'true');
+    if (config.optAutoplayNext) url.searchParams.append('autoplayNextEpisode', 'true');
+    if (config.optEpisodeSelector) url.searchParams.append('episodeSelector', 'true');
+  }
+
+  // Parâmetro de Dublagem (Apenas Animes)
+  if (config.contentType.startsWith('anime') && config.optDub) {
+    url.searchParams.append('dub', 'true');
+  }
 
   return url.toString();
 }
