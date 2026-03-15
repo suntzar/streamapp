@@ -110,7 +110,7 @@ export default function App() {
           className="w-full h-full border-0"
           allowFullScreen
           title="Video Player"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-storage-access-by-user-activation"
         />
       </div>
     );
