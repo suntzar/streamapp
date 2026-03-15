@@ -43,6 +43,26 @@ export function applyDynamicTheme(hexColor: string) {
   root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
   root.style.setProperty('--primary-muted', `${hsl.h} ${hsl.s * 0.5}% ${Math.min(hsl.l * 1.5, 30)}%`);
   root.style.setProperty('--primary-accent', `${hsl.h} ${Math.min(hsl.s + 20, 100)}% ${Math.max(hsl.l - 10, 20)}%`);
+
+  // Controle do Hardware Nativo (StatusBar e Navbar)
+  try {
+    if ((window as any).StatusBar) {
+      (window as any).StatusBar.backgroundColorByHexString(cleanHex);
+      if (hsl.l > 65) {
+        (window as any).StatusBar.styleDefault(); // Texto escuro
+      } else {
+        (window as any).StatusBar.styleLightContent(); // Texto claro
+      }
+    }
+
+    if ((window as any).NavigationBar) {
+      // isLight=true ativa ícones escuros na barra de navegação (para fundos claros)
+      const isLight = hsl.l > 65;
+      (window as any).NavigationBar.backgroundColorByHexString(cleanHex, isLight);
+    }
+  } catch (e) {
+    console.warn('Erro ao aplicar cores no hardware nativo:', e);
+  }
 }
 
 export function saveThemePreference(color: string, useMaterialYou: boolean) {

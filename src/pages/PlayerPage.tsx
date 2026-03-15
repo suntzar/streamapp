@@ -37,6 +37,62 @@ export default function PlayerPage() {
     optDub,
   });
 
+  // Native Hardware Control (Landscape & Immersive Mode)
+  useEffect(() => {
+    const enterPlayerMode = () => {
+      // Lock orientation to landscape
+      if ((window as any).screen?.orientation?.lock) {
+        (window as any).screen.orientation.lock('landscape').catch((err: any) => {
+          console.warn('Orientation lock failed:', err);
+        });
+      }
+
+      // Hide Status Bar (Cordova)
+      if ((window as any).StatusBar) {
+        (window as any).StatusBar.hide();
+      }
+
+      // Enter Immersive Mode (Android FullScreen Plugin)
+      if ((window as any).AndroidFullScreen) {
+        (window as any).AndroidFullScreen.immersiveMode(
+          () => console.log('Immersive mode active'),
+          (err: any) => console.error('Immersive mode failed:', err)
+        );
+      }
+    };
+
+    const exitPlayerMode = () => {
+      // Unlock orientation
+      if ((window as any).screen?.orientation?.unlock) {
+        try {
+          (window as any).screen.orientation.unlock();
+        } catch (e) {}
+      }
+
+      // Show Status Bar
+      if ((window as any).StatusBar) {
+        (window as any).StatusBar.show();
+      }
+
+      // Exit Immersive Mode
+      if ((window as any).AndroidFullScreen) {
+        (window as any).AndroidFullScreen.showSystemUI();
+      }
+    };
+
+    // Wait for deviceready if possible, but execute immediately too
+    if ((window as any).cordova) {
+      document.addEventListener('deviceready', enterPlayerMode, false);
+    } else {
+      enterPlayerMode();
+    }
+
+    return () => {
+      document.removeEventListener('deviceready', enterPlayerMode);
+      exitPlayerMode();
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-black z-[9999] overflow-hidden">
       {/* Overlay controls - only back button */}

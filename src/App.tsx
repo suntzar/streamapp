@@ -38,6 +38,10 @@ function AppContent() {
       // Reinicializa o tema após o deviceready para garantir acesso ao plugin
       initTheme();
 
+      // Garante que a barra de status e navegação apareçam na Home
+      if ((window as any).StatusBar) (window as any).StatusBar.show();
+      if ((window as any).AndroidFullScreen) (window as any).AndroidFullScreen.showSystemUI();
+
       (window as any).open = () => null;
       document.addEventListener("backbutton", onBackKeyDown, false);
     };

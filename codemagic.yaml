@@ -23,6 +23,10 @@ workflows:
           cordova platform add android --no-interactive
           cordova plugin add cordova-plugin-device
           cordova plugin add cordova-plugin-inappbrowser
+          cordova plugin add cordova-plugin-statusbar
+          cordova plugin add cordova-plugin-screen-orientation
+          cordova plugin add cordova-plugin-fullscreen
+          cordova plugin add cordova-plugin-navigationbar-color
           cordova plugin add https://github.com/ollm/cordova-plugin-dynamic-color
           cordova build android --debug --no-interactive
     artifacts:
