@@ -13,9 +13,17 @@ function VideoPlayerPage() {
   const [searchParams] = useSearchParams();
   const [progressData, setProgressData] = useState<{ progress: number; timestamp: number; duration: number } | null>(null);
 
+  useEffect(() => {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+      console.warn('AVISO: O player pode não funcionar corretamente em contextos não seguros (HTTP). Use HTTPS ou localhost.');
+    }
+  }, []);
+
   const themeColor = searchParams.get('color') || getSavedThemeColor();
   const optOverlay = searchParams.get('overlay') === 'true';
-  const optEpisodeSelector = searchParams.get('selector') === 'true';
+  const optNextBtn = searchParams.get('nextEpisode') === 'true';
+  const optAutoplayNext = searchParams.get('autoplayNextEpisode') === 'true';
+  const optEpisodeSelector = searchParams.get('episodeSelector') === 'true';
   const optDub = searchParams.get('dub') === 'true';
 
   useEffect(() => {
@@ -29,24 +37,32 @@ function VideoPlayerPage() {
     episodeNum: episode,
     themeColor,
     optOverlay,
+    optNextBtn,
+    optAutoplayNext,
     optEpisodeSelector,
     optDub,
   };
 
   const playerUrl = buildPlayerUrl(config);
 
+  // Watch Progress Tracking according to documentation
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data && typeof data.progress === 'number') {
-          setProgressData({
-            progress: data.progress,
-            timestamp: data.timestamp || 0,
-            duration: data.duration || 0
-          });
+        // Documentation says messages are JSON strings
+        if (typeof event.data === 'string') {
+          const data = JSON.parse(event.data);
+          if (data && typeof data.progress === 'number') {
+            setProgressData({
+              progress: data.progress,
+              timestamp: data.timestamp || 0,
+              duration: data.duration || 0
+            });
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        // Message is not for us or not JSON
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -54,6 +70,7 @@ function VideoPlayerPage() {
 
   return (
     <div className="fixed inset-0 bg-black z-[9999]">
+      {/* Back Button Overlay */}
       <div className="absolute top-0 left-0 right-0 p-4 pt-safe z-50 flex justify-between items-start pointer-events-none">
         <motion.button 
           initial={{ opacity: 0, x: -20 }}
@@ -76,12 +93,13 @@ function VideoPlayerPage() {
         )}
       </div>
       
+      {/* Player Iframe according to documentation */}
       <iframe 
         key={playerUrl}
         src={playerUrl} 
         className="absolute inset-0 w-full h-full border-0"
         allowFullScreen
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock; display-capture"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         title="Video Player"
       />
     </div>
@@ -96,11 +114,15 @@ function HomePage() {
   // Form State
   const [contentType, setContentType] = useState(urlType || 'movie');
   const [contentId, setContentId] = useState(urlId || '299534');
-  const [seasonNum, setSeasonNum] = useState(urlSeason || '');
-  const [episodeNum, setEpisodeNum] = useState(urlEpisode || '');
+  const [seasonNum, setSeasonNum] = useState(urlSeason || '1');
+  const [episodeNum, setEpisodeNum] = useState(urlEpisode || '1');
   const [themeColor, setThemeColor] = useState(getSavedThemeColor());
-  const [optOverlay, setOptOverlay] = useState(false);
-  const [optEpisodeSelector, setOptEpisodeSelector] = useState(false);
+  
+  // Features State (matching doc param names)
+  const [optOverlay, setOptOverlay] = useState(true);
+  const [optNextBtn, setOptNextBtn] = useState(true);
+  const [optAutoplayNext, setOptAutoplayNext] = useState(true);
+  const [optEpisodeSelector, setOptEpisodeSelector] = useState(true);
   const [optDub, setOptDub] = useState(false);
 
   // TMDB State
@@ -131,16 +153,14 @@ function HomePage() {
 
   // Update URL in real-time when inputs change
   useEffect(() => {
-    if (!contentId || contentId === '299534' && !urlId) return; // Don't update for initial demo unless specifically navigated
+    if (!contentId || (contentId === '299534' && !urlId)) return;
 
     let newPath = `/${contentType}/${contentId}`;
     if (contentType === 'tv' || contentType === 'anime-show') {
-      if (seasonNum || episodeNum) {
-        newPath += `/${seasonNum || '1'}/${episodeNum || '1'}`;
-      }
+      newPath += `/${seasonNum || '1'}/${episodeNum || '1'}`;
     }
     
-    // Only navigate if path actually changed to avoid loop
+    // Only navigate if path actually changed
     const currentPath = urlSeason ? `/${urlType}/${urlId}/${urlSeason}/${urlEpisode}` : `/${urlType}/${urlId}`;
     if (newPath !== currentPath) {
       navigate(newPath, { replace: true });
@@ -172,7 +192,6 @@ function HomePage() {
     setContentType(result.media_type);
     setSearchResults([]);
     setSearchQuery('');
-    // Initial selection path
     navigate(`/${result.media_type}/${result.id}`, { replace: true });
   };
 
@@ -189,7 +208,9 @@ function HomePage() {
     const params = new URLSearchParams();
     if (themeColor) params.append('color', themeColor);
     if (optOverlay) params.append('overlay', 'true');
-    if (optEpisodeSelector) params.append('selector', 'true');
+    if (optNextBtn) params.append('nextEpisode', 'true');
+    if (optAutoplayNext) params.append('autoplayNextEpisode', 'true');
+    if (optEpisodeSelector) params.append('episodeSelector', 'true');
     if (optDub) params.append('dub', 'true');
 
     navigate(`${path}?${params.toString()}`);
@@ -197,6 +218,7 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-[hsl(var(--primary)/0.3)] relative overflow-x-hidden">
+      {/* Background Banner */}
       <AnimatePresence>
         {selectedContent?.backdrop_path && (
           <motion.div 
@@ -327,10 +349,25 @@ function HomePage() {
                     <input type="text" value={themeColor.toUpperCase()} onChange={(e) => setThemeColor(e.target.value.replace('#', ''))} className="w-20 bg-transparent text-center font-mono text-sm font-bold text-zinc-400 focus:outline-none" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {[{ id: 'overlay', label: 'Overlay Netflix', state: optOverlay, set: setOptOverlay }, { id: 'selector', label: 'Seletor Ep.', state: optEpisodeSelector, set: setOptEpisodeSelector }].map((opt) => (
-                    <button key={opt.id} type="button" onClick={() => opt.set(!opt.state)} className="flex items-center justify-between p-4 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: opt.state ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: opt.state ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-xs font-bold transition-colors ${opt.state ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>{opt.label}</span><div className={`w-2 h-2 rounded-full transition-all ${opt.state ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: opt.state ? 'hsl(var(--primary))' : undefined }} /></button>
-                  ))}
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {[{ id: 'overlay', label: 'Overlay Netflix', state: optOverlay, set: setOptOverlay }, { id: 'selector', label: 'Seletor Ep.', state: optEpisodeSelector, set: setOptEpisodeSelector }].map((opt) => (
+                      <button key={opt.id} type="button" onClick={() => opt.set(!opt.state)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: opt.state ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: opt.state ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${opt.state ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>{opt.label}</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${opt.state ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: opt.state ? 'hsl(var(--primary))' : undefined }} /></button>
+                    ))}
+                  </div>
+                  
+                  {(contentType === 'tv' || contentType === 'anime-show') && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[{ id: 'next', label: 'Botão Próximo', state: optNextBtn, set: setOptNextBtn }, { id: 'auto', label: 'Autoplay Prox', state: optAutoplayNext, set: setOptAutoplayNext }].map((opt) => (
+                        <button key={opt.id} type="button" onClick={() => opt.set(!opt.state)} className="flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: opt.state ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: opt.state ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${opt.state ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>{opt.label}</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${opt.state ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: opt.state ? 'hsl(var(--primary))' : undefined }} /></button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {contentType.startsWith('anime') && (
+                    <button type="button" onClick={() => setOptDub(!optDub)} className="w-full flex items-center justify-between p-3 rounded-2xl border-2 transition-all active:scale-95 group relative overflow-hidden" style={{ borderColor: optDub ? 'hsl(var(--primary) / 0.5)' : 'rgba(255,255,255,0.05)', backgroundColor: optDub ? 'hsl(var(--primary) / 0.1)' : 'rgba(0,0,0,0.2)' }}><span className={`text-[10px] font-bold transition-colors ${optDub ? 'text-[hsl(var(--primary))]' : 'text-zinc-500 group-hover:text-zinc-300'}`}>Versão Dublada (DUB)</span><div className={`w-1.5 h-1.5 rounded-full transition-all ${optDub ? 'scale-125 shadow-[0_0_8px_hsl(var(--primary))]' : 'scale-75 bg-zinc-800'}`} style={{ backgroundColor: optDub ? 'hsl(var(--primary))' : undefined }} /></button>
+                  )}
                 </div>
               </div>
 
@@ -356,7 +393,6 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Cordova Initialization & Back Button Handling
   useEffect(() => {
     const handleDeviceReady = () => {
       console.log('App pronto. Proteções ativas.');
@@ -364,19 +400,14 @@ function AppContent() {
         console.log('Pop-up bloqueado: ' + url);
         return null;
       };
-
-      // Escuta o botão físico de voltar do Android/Cordova
       document.addEventListener("backbutton", onBackKeyDown, false);
     };
 
     const onBackKeyDown = (e: any) => {
       e.preventDefault();
-      
-      // Se não estiver na home, volta um path no histórico do router
       if (location.pathname !== "/") {
         navigate(-1);
       } else {
-        // Se estiver na home, fecha o aplicativo (comportamento padrão Android)
         if ((navigator as any).app) {
           (navigator as any).app.exitApp();
         }

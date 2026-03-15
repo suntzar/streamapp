@@ -15,53 +15,55 @@ export function buildPlayerUrl(config: PlayerConfig): string {
   const baseUrl = 'https://player.videasy.net';
   let path = '';
 
-  // Sanitize ID and numbers to avoid broken URLs
-  const id = encodeURIComponent((config.contentId || '').trim());
-  const season = encodeURIComponent((config.seasonNum || '1').trim());
-  const episode = encodeURIComponent((config.episodeNum || '1').trim());
+  const id = (config.contentId || '').trim();
+  const season = (config.seasonNum || '1').trim();
+  const episode = (config.episodeNum || '1').trim();
 
-  switch (config.contentType) {
-    case 'movie':
-      path = `/movie/${id}`;
-      break;
-    case 'tv':
-      path = `/tv/${id}/${season}/${episode}`;
-      break;
-    case 'anime-show':
-      path = `/anime/${id}/${episode}`;
-      break;
-    case 'anime-movie':
-      path = `/anime/${id}`;
-      break;
-    default:
-      path = `/movie/${id}`;
+  // URL Structure according to documentation
+  if (config.contentType === 'movie') {
+    path = `/movie/${id}`;
+  } else if (config.contentType === 'tv') {
+    path = `/tv/${id}/${season}/${episode}`;
+  } else if (config.contentType === 'anime-show') {
+    path = `/anime/${id}/${episode}`;
+  } else if (config.contentType === 'anime-movie') {
+    path = `/anime/${id}`;
+  } else {
+    path = `/movie/${id}`;
   }
 
-  const url = new URL(`${baseUrl}${path}`);
+  let finalUrl = baseUrl + path;
 
-  // Parâmetros Globais (Filmes, Séries e Animes)
+  // Customization Parameters (Query Strings)
+  const params = new URLSearchParams();
+
+  // color: Hex color codes without the # symbol
   if (config.themeColor) {
     const color = config.themeColor.replace('#', '');
-    if (color && color.length >= 3) url.searchParams.append('color', color);
-  }
-  
-  if (config.optOverlay) {
-    url.searchParams.append('overlay', 'true');
+    if (color) params.append('color', color);
   }
 
-  // Parâmetros Específicos para Séries e Animes (Episódios)
-  const isEpisodic = config.contentType === 'tv' || config.contentType === 'anime-show';
-  
-  if (isEpisodic) {
-    if (config.optNextBtn) url.searchParams.append('nextEpisode', 'true');
-    if (config.optAutoplayNext) url.searchParams.append('autoplayNextEpisode', 'true');
-    if (config.optEpisodeSelector) url.searchParams.append('episodeSelector', 'true');
-  }
-
-  // Parâmetro de Dublagem (Apenas Animes)
+  // dub: true|false (Anime only)
   if (config.contentType.startsWith('anime') && config.optDub) {
-    url.searchParams.append('dub', 'true');
+    params.append('dub', 'true');
   }
 
-  return url.toString();
+  // overlay: Netflix-style overlay
+  if (config.optOverlay) {
+    params.append('overlay', 'true');
+  }
+
+  // Episodic features
+  if (config.contentType === 'tv' || config.contentType === 'anime-show') {
+    if (config.optNextBtn) params.append('nextEpisode', 'true');
+    if (config.optAutoplayNext) params.append('autoplayNextEpisode', 'true');
+    if (config.optEpisodeSelector) params.append('episodeSelector', 'true');
+  }
+
+  const queryString = params.toString();
+  if (queryString) {
+    finalUrl += '?' + queryString;
+  }
+
+  return finalUrl;
 }
