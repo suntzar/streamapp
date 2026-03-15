@@ -57,30 +57,51 @@ export function getThemePreference(): { color: string; useMaterialYou: boolean }
   };
 }
 
+/**
+ * Tenta obter a cor do Material You de forma robusta
+ */
 export async function getMaterialYouColor(): Promise<string | null> {
   return new Promise((resolve) => {
-    try {
-      // Tenta encontrar o plugin em diferentes locais (window ou cordova.require)
-      let dynamicColor = (window as any).DynamicColor;
-      
-      if (!dynamicColor && (window as any).cordova && (window as any).cordova.require) {
-        try {
-          dynamicColor = (window as any).cordova.require("cordova-plugin-dynamic-color.plugin");
-        } catch (e) {}
-      }
+    const attemptFetch = () => {
+      try {
+        let dynamicColor = (window as any).DynamicColor;
+        
+        // Tenta carregar via require se não estiver no window
+        if (!dynamicColor && (window as any).cordova?.require) {
+          try {
+            dynamicColor = (window as any).cordova.require("cordova-plugin-dynamic-color.plugin");
+          } catch (e) {}
+        }
 
-      if (dynamicColor && typeof dynamicColor.colors === 'function') {
-        dynamicColor.colors((colors: any) => {
-          // O plugin retorna cores em HEX (ex: #AABBCC)
-          resolve(colors.primary || null);
-        }, () => {
+        if (dynamicColor && typeof dynamicColor.colors === 'function') {
+          console.log('StreamPlay: Plugin DynamicColor detectado. Solicitando cores...');
+          dynamicColor.colors((colors: any) => {
+            if (colors && colors.primary) {
+              console.log('StreamPlay: Cor capturada do Android:', colors.primary);
+              resolve(colors.primary);
+            } else {
+              console.warn('StreamPlay: Plugin retornou cores vazias.');
+              resolve(null);
+            }
+          }, (err: any) => {
+            console.error('StreamPlay: Erro ao chamar dynamicColor.colors:', err);
+            resolve(null);
+          });
+        } else {
           resolve(null);
-        });
-      } else {
+        }
+      } catch (err) {
+        console.error('StreamPlay: Falha crítica na detecção do plugin:', err);
         resolve(null);
       }
-    } catch (err) {
-      resolve(null);
-    }
+    };
+
+    // Pequeno delay para garantir que o clobber do Cordova aconteceu
+    setTimeout(attemptFetch, 100);
   });
+}
+
+// Verifica se o suporte está presente no ambiente
+export function isMaterialYouSupported(): boolean {
+  return !!((window as any).DynamicColor || (window as any).cordova?.require);
 }

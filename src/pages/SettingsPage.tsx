@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Palette, Settings2, ShieldCheck, Save, Trash2, Github, ChevronRight, Smartphone } from 'lucide-react';
-import { applyDynamicTheme, getThemePreference, saveThemePreference, getMaterialYouColor } from '../utils/theme';
+import { applyDynamicTheme, getThemePreference, saveThemePreference, getMaterialYouColor, isMaterialYouSupported } from '../utils/theme';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -13,16 +13,22 @@ export default function SettingsPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [hasMaterialYou, setHasMaterialYou] = useState(false);
 
-  // Check if Material You is available on this device
+  // Monitoramento de suporte em tempo real
   useEffect(() => {
-    if ((window as any).DynamicColor) {
-      setHasMaterialYou(true);
-    }
+    const checkSupport = () => {
+      if (isMaterialYouSupported()) {
+        setHasMaterialYou(true);
+      }
+    };
+    checkSupport();
+    // Re-checa após 1 segundo caso o Cordova tenha demorado
+    const timer = setTimeout(checkSupport, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Effect to apply theme in real-time while previewing in settings
+  // Preview em tempo real
   useEffect(() => {
-    async function updateTheme() {
+    async function updatePreview() {
       if (useMaterialYou) {
         const m3Color = await getMaterialYouColor();
         if (m3Color) {
@@ -32,7 +38,7 @@ export default function SettingsPage() {
       }
       applyDynamicTheme(themeColor);
     }
-    updateTheme();
+    updatePreview();
   }, [themeColor, useMaterialYou]);
 
   const handleSave = () => {
@@ -51,7 +57,6 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-[hsl(var(--primary)/0.3)] relative overflow-x-hidden">
-      {/* Background Decorative Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full opacity-20 transition-colors duration-1000" style={{ backgroundColor: 'hsl(var(--primary))' }} />
       </div>
@@ -73,13 +78,11 @@ export default function SettingsPage() {
           </div>
 
           <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 lg:p-8 backdrop-blur-md space-y-8">
-            
-            {/* Material You Option (Only if supported or for preview) */}
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Material You (Dinâmico)</label>
+                <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Cores do Sistema</label>
                 {!hasMaterialYou && (
-                  <span className="text-[8px] bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full font-black">NÃO SUPORTADO</span>
+                  <span className="text-[8px] bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full font-black uppercase">Plugin Pendente ou Não Suportado</span>
                 )}
               </div>
               
@@ -94,8 +97,8 @@ export default function SettingsPage() {
                     <Smartphone size={24} />
                   </div>
                   <div className="text-left">
-                    <h3 className={`font-bold text-sm ${useMaterialYou ? 'text-[hsl(var(--primary))]' : 'text-zinc-300'}`}>Cores do Sistema</h3>
-                    <p className="text-[10px] text-zinc-500 font-medium">Sincronizar com o papel de parede (Android 12+)</p>
+                    <h3 className={`font-bold text-sm ${useMaterialYou ? 'text-[hsl(var(--primary))]' : 'text-zinc-300'}`}>Material You</h3>
+                    <p className="text-[10px] text-zinc-500 font-medium">Extrair cores do seu Android</p>
                   </div>
                 </div>
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${useMaterialYou ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] shadow-[0_0_10px_hsl(var(--primary))]' : 'border-zinc-700 bg-transparent'}`}>
@@ -104,8 +107,7 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            {/* Manual Color Picker - Disabled if Material You is active */}
-            <div className={`space-y-4 transition-opacity duration-300 ${useMaterialYou ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`space-y-4 transition-all duration-300 ${useMaterialYou ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
               <label className="text-sm font-bold text-zinc-400 uppercase tracking-widest px-1">Cor Personalizada</label>
               <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
                 <div 
@@ -160,7 +162,7 @@ export default function SettingsPage() {
           <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 space-y-4">
             <div className="flex justify-between items-center text-sm font-medium py-2 border-b border-white/5">
               <span className="text-zinc-500">Versão da Interface</span>
-              <span className="text-zinc-300">v2.6.0-hybrid</span>
+              <span className="text-zinc-300">v2.6.5-debug</span>
             </div>
             <div className="flex justify-between items-center text-sm font-medium py-2 border-b border-white/5">
               <span className="text-zinc-500">Motor de Reprodução</span>
