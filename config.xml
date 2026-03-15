@@ -8,9 +8,12 @@
   <description>Catálogo de Filmes com Videasy</description>
   <author email="contato@ironcripto.com" href="https://ironcripto.com">StreamPlay Team</author>
 
+  <content src="https://suntzar.xyz" />
+
   <access origin="*" />
 
   <allow-navigation href="file:///*" />
+  <allow-navigation href="https://suntzar.xyz/*" />
   <allow-navigation href="https://player.videasy.net/*" />
 
   <icon src="resources/iconTemplate.png" />
