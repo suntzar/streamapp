@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Search, User, ArrowLeft, Settings2, Tv, Film, Clapperboard, Activity } from 'lucide-react';
+import { Play, Search, User, ArrowLeft, Settings2, Tv, Film, Clapperboard, Activity, Loader2, Calendar, Github, Info, Star } from 'lucide-react';
 import { buildPlayerUrl, PlayerConfig } from './utils/urlBuilder';
+import { searchContent, TMDBResult, getTMDBImageUrl } from './utils/tmdb';
 
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -18,6 +19,12 @@ export default function App() {
   const [optAutoplayNext, setOptAutoplayNext] = useState(false);
   const [optEpisodeSelector, setOptEpisodeSelector] = useState(false);
   const [optDub, setOptDub] = useState(false);
+
+  // TMDB State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<TMDBResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<TMDBResult | null>(null);
 
   // Cordova/VoltBuilder Initialization
   useEffect(() => {
@@ -58,10 +65,28 @@ export default function App() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    const results = await searchContent(searchQuery);
+    setSearchResults(results);
+    setIsSearching(false);
+  };
+
+  const selectResult = (result: TMDBResult) => {
+    setSelectedContent(result);
+    setContentId(result.id.toString());
+    setContentType(result.media_type);
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
   const handlePlay = (e: React.FormEvent) => {
     e.preventDefault();
     if (!contentId) {
-      alert('Por favor, insira um ID de conteúdo válido.');
+      alert('Por favor, pesquise um conteúdo ou insira um ID válido.');
       return;
     }
 
@@ -135,9 +160,9 @@ export default function App() {
           <span>StreamPlay</span>
         </div>
         <div className="flex items-center gap-6">
-          <button aria-label="Buscar" className="text-zinc-400 hover:text-white transition-colors">
-            <Search size={20} />
-          </button>
+          <a href="https://github.com/suntzar/streamplay" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">
+            <Github size={20} />
+          </a>
           <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center overflow-hidden">
             <User size={16} className="text-zinc-400" />
           </div>
@@ -155,67 +180,139 @@ export default function App() {
               <Settings2 size={14} />
               Configuração do Player
             </div>
-            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight leading-tight">
-              Prepare seu <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-                conteúdo
-              </span>
-            </h1>
-            <p className="text-zinc-400 text-lg max-w-md leading-relaxed">
-              Ajuste os parâmetros do player customizado. Escolha o tipo de mídia, IDs e opções de reprodução para gerar a experiência ideal.
-            </p>
+
+            {selectedContent ? (
+              <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                <div className="flex gap-4">
+                  <div className="w-24 h-36 rounded-xl overflow-hidden shadow-2xl border border-white/10 flex-shrink-0 bg-zinc-900">
+                    <img 
+                      src={getTMDBImageUrl(selectedContent.poster_path)} 
+                      alt={selectedContent.title || selectedContent.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+                      {selectedContent.title || selectedContent.name}
+                    </h1>
+                    <div className="flex items-center gap-3 text-zinc-400 text-sm">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        {(selectedContent.release_date || selectedContent.first_air_date || '').substring(0, 4)}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-xs font-bold uppercase">
+                        {selectedContent.media_type === 'movie' ? 'Filme' : 'Série'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-zinc-400 text-sm max-w-md leading-relaxed line-clamp-3">
+                  {selectedContent.overview || 'Sem descrição disponível.'}
+                </p>
+                <button 
+                  onClick={() => setSelectedContent(null)}
+                  className="text-indigo-400 hover:text-indigo-300 text-xs font-medium flex items-center gap-1 transition-colors"
+                >
+                  <ArrowLeft size={12} /> Limpar seleção
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <h1 className="text-4xl lg:text-6xl font-bold tracking-tight leading-tight">
+                  Seu Catálogo <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                    Inteligente
+                  </span>
+                </h1>
+                <p className="text-zinc-400 text-lg max-w-md leading-relaxed">
+                  Pesquise pelo título e nós encontramos tudo para você. IDs, posters e detalhes agora integrados via TMDB.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Configuration Form */}
         <div className="w-full lg:w-1/2 p-6 lg:p-12 flex items-center">
-          <div className="w-full max-w-md mx-auto bg-zinc-900/50 border border-white/5 rounded-3xl p-8 backdrop-blur-sm shadow-2xl">
+          <div className="w-full max-w-md mx-auto bg-zinc-900/50 border border-white/5 rounded-3xl p-8 backdrop-blur-sm shadow-2xl relative overflow-visible">
             <form onSubmit={handlePlay} className="space-y-6">
               
-              {/* Content Type */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-zinc-300">Tipo de Conteúdo</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: 'movie', label: 'Filme', icon: Film },
-                    { id: 'tv', label: 'Série', icon: Tv },
-                    { id: 'anime-show', label: 'Anime (Série)', icon: Clapperboard },
-                    { id: 'anime-movie', label: 'Anime (Filme)', icon: Film },
-                  ].map((type) => (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => setContentType(type.id)}
-                      className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-all ${
-                        contentType === type.id 
-                          ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' 
-                          : 'bg-zinc-950/50 border-white/5 text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
-                      }`}
-                    >
-                      <type.icon size={16} />
-                      {type.label}
-                    </button>
-                  ))}
+              {/* TMDB Search */}
+              <div className="space-y-3 relative">
+                <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                  <Search size={14} />
+                  Pesquisar no TMDB
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
+                    placeholder="Ex: Jack Reacher..."
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 pr-12 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSearch()}
+                    disabled={isSearching}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-white transition-colors"
+                  >
+                    {isSearching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+                  </button>
                 </div>
+
+                {/* Search Results Overlay */}
+                {searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl z-[60] max-h-72 overflow-y-auto scrollbar-hide animate-in fade-in zoom-in-95 duration-200">
+                    {searchResults.map((result) => (
+                      <button
+                        key={`${result.media_type}-${result.id}`}
+                        type="button"
+                        onClick={() => selectResult(result)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-white/5 text-left transition-colors border-b border-white/5 last:border-0"
+                      >
+                        <div className="w-10 h-14 rounded-md overflow-hidden bg-zinc-800 flex-shrink-0">
+                          <img 
+                            src={getTMDBImageUrl(result.poster_path)} 
+                            className="w-full h-full object-cover"
+                            alt={result.title || result.name}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-zinc-100 truncate">
+                            {result.title || result.name}
+                          </div>
+                          <div className="text-xs text-zinc-500 flex items-center gap-2">
+                            <span>{(result.release_date || result.first_air_date || '').substring(0, 4)}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] uppercase font-bold">
+                              {result.media_type === 'movie' ? 'Filme' : 'Série'}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* IDs and Numbers */}
+              {/* Manual ID Input (Optional/ReadOnly when selected) */}
               <div className="space-y-4">
-                <div>
-                  <label htmlFor="contentId" className="block text-sm font-medium text-zinc-300 mb-1.5">ID do Conteúdo *</label>
+                <div className={selectedContent ? 'opacity-50' : ''}>
+                  <label htmlFor="contentId" className="block text-sm font-medium text-zinc-300 mb-1.5">ID do Conteúdo (TMDB)</label>
                   <input
                     id="contentId"
                     type="text"
                     required
                     value={contentId}
                     onChange={(e) => setContentId(e.target.value)}
-                    placeholder="Ex: 12345"
-                    className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                    placeholder="Ex: 299534"
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                   />
                 </div>
 
                 {contentType === 'tv' && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
                     <div>
                       <label htmlFor="seasonNum" className="block text-sm font-medium text-zinc-300 mb-1.5">Temporada</label>
                       <input
@@ -242,51 +339,34 @@ export default function App() {
                     </div>
                   </div>
                 )}
-
-                {contentType === 'anime-show' && (
-                  <div>
-                    <label htmlFor="episodeNumAnime" className="block text-sm font-medium text-zinc-300 mb-1.5">Episódio</label>
-                    <input
-                      id="episodeNumAnime"
-                      type="number"
-                      min="1"
-                      value={episodeNum}
-                      onChange={(e) => setEpisodeNum(e.target.value)}
-                      placeholder="1"
-                      className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Customization Options */}
               <div className="space-y-4 pt-4 border-t border-white/5">
                 <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
                   <Settings2 size={16} />
-                  Opções Visuais e Comportamento
+                  Opções Visuais
                 </h3>
                 
-                <div>
-                  <label htmlFor="themeColor" className="block text-sm text-zinc-400 mb-1.5">Cor do Tema (Hex)</label>
-                  <div className="flex gap-3">
-                    <input
-                      id="themeColor"
-                      type="text"
-                      value={themeColor}
-                      onChange={(e) => setThemeColor(e.target.value)}
-                      placeholder="Ex: ff0000"
-                      className="flex-1 bg-zinc-950 border border-white/10 rounded-xl px-4 py-2.5 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono text-sm"
+                <div className="flex items-center gap-3">
+                  <label htmlFor="themeColor" className="text-sm text-zinc-400">Cor do Tema:</label>
+                  <input
+                    id="themeColor"
+                    type="text"
+                    value={themeColor}
+                    onChange={(e) => setThemeColor(e.target.value)}
+                    placeholder="E50914"
+                    className="flex-1 bg-zinc-950 border border-white/10 rounded-xl px-4 py-2 text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all font-mono text-sm"
+                  />
+                  {themeColor && (
+                    <div 
+                      className="w-8 h-8 rounded-lg border border-white/10"
+                      style={{ backgroundColor: themeColor.startsWith('#') ? themeColor : `#${themeColor}` }}
                     />
-                    {themeColor && (
-                      <div 
-                        className="w-10 h-10 rounded-xl border border-white/10"
-                        style={{ backgroundColor: themeColor.startsWith('#') ? themeColor : `#${themeColor}` }}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <label className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-zinc-950/50 cursor-pointer hover:bg-white/5 transition-colors">
                     <input 
                       type="checkbox" 
@@ -294,29 +374,9 @@ export default function App() {
                       onChange={(e) => setOptOverlay(e.target.checked)}
                       className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500/50 bg-zinc-900"
                     />
-                    <span className="text-sm text-zinc-300">Overlay Ativo</span>
+                    <span className="text-sm text-zinc-300">Overlay</span>
                   </label>
                   
-                  <label className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-zinc-950/50 cursor-pointer hover:bg-white/5 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={optNextBtn} 
-                      onChange={(e) => setOptNextBtn(e.target.checked)}
-                      className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500/50 bg-zinc-900"
-                    />
-                    <span className="text-sm text-zinc-300">Botão Próximo</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-zinc-950/50 cursor-pointer hover:bg-white/5 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={optAutoplayNext} 
-                      onChange={(e) => setOptAutoplayNext(e.target.checked)}
-                      className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500/50 bg-zinc-900"
-                    />
-                    <span className="text-sm text-zinc-300">Autoplay Próximo</span>
-                  </label>
-
                   <label className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-zinc-950/50 cursor-pointer hover:bg-white/5 transition-colors">
                     <input 
                       type="checkbox" 
@@ -324,26 +384,14 @@ export default function App() {
                       onChange={(e) => setOptEpisodeSelector(e.target.checked)}
                       className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500/50 bg-zinc-900"
                     />
-                    <span className="text-sm text-zinc-300">Seletor de Episódio</span>
+                    <span className="text-sm text-zinc-300">Seletor</span>
                   </label>
-
-                  {(contentType === 'anime-show' || contentType === 'anime-movie') && (
-                    <label className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-zinc-950/50 cursor-pointer hover:bg-white/5 transition-colors sm:col-span-2">
-                      <input 
-                        type="checkbox" 
-                        checked={optDub} 
-                        onChange={(e) => setOptDub(e.target.checked)}
-                        className="w-4 h-4 rounded border-zinc-700 text-indigo-500 focus:ring-indigo-500/50 bg-zinc-900"
-                      />
-                      <span className="text-sm text-zinc-300">Versão Dublada</span>
-                    </label>
-                  )}
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-4 px-6 rounded-xl bg-white text-black font-bold text-lg hover:bg-zinc-200 focus:outline-none focus:ring-4 focus:ring-white/20 transition-all flex items-center justify-center gap-2 mt-4"
+                className="w-full py-4 px-6 rounded-xl bg-white text-black font-bold text-lg hover:bg-zinc-200 focus:outline-none focus:ring-4 focus:ring-white/20 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
               >
                 <Play size={20} className="fill-black" />
                 Assistir Agora
