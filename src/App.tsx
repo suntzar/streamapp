@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Search, User, ArrowLeft, Settings2, Tv, Film, Clapperboard, Activity, Loader2, Calendar, Github, Info, Star, ChevronRight, X } from 'lucide-react';
 import { buildPlayerUrl, PlayerConfig } from './utils/urlBuilder';
-import { searchContent, TMDBResult, getTMDBImageUrl } from './utils/tmdb';
+import { searchContent, TMDBResult, getTMDBImageUrl, getTMDBBackdropUrl } from './utils/tmdb';
 import { applyDynamicTheme, getSavedThemeColor } from './utils/theme';
 
 export default function App() {
@@ -169,8 +169,29 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-[hsl(var(--primary)/0.3)]">
-      {/* Dynamic Background */}
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-[hsl(var(--primary)/0.3)] relative overflow-x-hidden">
+      {/* Dynamic Background Banner */}
+      <AnimatePresence>
+        {selectedContent?.backdrop_path && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="fixed inset-0 z-0 pointer-events-none"
+          >
+            <img 
+              src={getTMDBBackdropUrl(selectedContent.backdrop_path)} 
+              className="w-full h-full object-cover scale-105"
+              alt="Background"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-transparent to-zinc-950" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Background Glows */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-colors duration-1000" style={{ backgroundColor: 'hsl(var(--primary) / 0.15)' }} />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-colors duration-1000" style={{ backgroundColor: 'hsl(var(--primary-accent) / 0.1)' }} />

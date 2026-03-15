@@ -7,6 +7,7 @@ export interface TMDBResult {
   title?: string;
   name?: string;
   poster_path: string | null;
+  backdrop_path: string | null;
   release_date?: string;
   first_air_date?: string;
   overview: string;
@@ -33,4 +34,9 @@ export async function searchContent(query: string): Promise<TMDBResult[]> {
 export function getTMDBImageUrl(path: string | null): string {
   if (!path) return 'https://placehold.co/500x750/09090b/white?text=Sem+Poster';
   return `${IMAGE_BASE_URL}${path}`;
+}
+
+export function getTMDBBackdropUrl(path: string | null): string {
+  if (!path) return '';
+  return `https://image.tmdb.org/t/p/original${path}`;
 }
