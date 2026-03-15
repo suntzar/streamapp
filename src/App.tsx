@@ -11,25 +11,33 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Global Theme Initialization
-  useEffect(() => {
-    async function initTheme() {
-      const prefs = getThemePreference();
-      if (prefs.useMaterialYou) {
-        const m3Color = await getMaterialYouColor();
-        if (m3Color) {
-          applyDynamicTheme(m3Color);
-          return;
-        }
+  // Função centralizada para inicializar o tema
+  const initTheme = async () => {
+    const prefs = getThemePreference();
+    if (prefs.useMaterialYou) {
+      const m3Color = await getMaterialYouColor();
+      if (m3Color) {
+        applyDynamicTheme(m3Color);
+        console.log('StreamPlay: Tema Material You aplicado.');
+        return;
       }
-      applyDynamicTheme(prefs.color);
     }
+    applyDynamicTheme(prefs.color);
+    console.log('StreamPlay: Tema personalizado aplicado.');
+  };
+
+  // Inicializa tema no mount (para browser/fallback)
+  useEffect(() => {
     initTheme();
   }, []);
 
   useEffect(() => {
     const handleDeviceReady = () => {
       console.log('StreamPlay: App pronto. Proteções ativas.');
+      
+      // Reinicializa o tema após o deviceready para garantir acesso ao plugin
+      initTheme();
+
       (window as any).open = () => null;
       document.addEventListener("backbutton", onBackKeyDown, false);
     };
@@ -63,7 +71,6 @@ function AppContent() {
   );
 }
 
-// --- APP ROOT ---
 export default function App() {
   return (
     <HashRouter>
