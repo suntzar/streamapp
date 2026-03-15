@@ -56,7 +56,12 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-4">
           <a href="https://github.com/suntzar/streamplay" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-all"><Github size={20} /></a>
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center cursor-pointer"><User size={20} className="text-zinc-400" /></div>
+          <button 
+            onClick={() => navigate('/settings')}
+            className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center cursor-pointer hover:border-[hsl(var(--primary)/0.3)] transition-all group"
+          >
+            <User size={20} className="text-zinc-400 group-hover:text-[hsl(var(--primary))] transition-colors" />
+          </button>
         </div>
       </header>
 

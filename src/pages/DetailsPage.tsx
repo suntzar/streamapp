@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Play, Settings2, Calendar, Star, Info, Tv, Film, Clapperboard } from 'lucide-react';
+import { ArrowLeft, Play, Settings2, Calendar, Star, Info, Tv, Film, Clapperboard, User } from 'lucide-react';
 import { TMDBResult, getContentDetails, getTMDBImageUrl, getTMDBBackdropUrl } from '../utils/tmdb';
 import { applyDynamicTheme, getSavedThemeColor } from '../utils/theme';
 
@@ -66,10 +66,18 @@ export default function DetailsPage() {
       <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between">
         <button onClick={() => navigate('/')} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
           <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="font-bold text-sm uppercase tracking-widest">Explorar</span>
+          <span className="font-bold text-sm uppercase tracking-widest font-display">Explorar</span>
         </button>
-        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-accent)))' }}>
-          <Play size={20} className="text-white fill-white ml-0.5" />
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/settings')}
+            className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center cursor-pointer hover:border-[hsl(var(--primary)/0.3)] transition-all group"
+          >
+            <User size={20} className="text-zinc-400 group-hover:text-[hsl(var(--primary))] transition-colors" />
+          </button>
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-accent)))' }}>
+            <Play size={20} className="text-white fill-white ml-0.5" />
+          </div>
         </div>
       </header>
 

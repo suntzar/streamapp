@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-route
 import HomePage from './pages/HomePage';
 import DetailsPage from './pages/DetailsPage';
 import PlayerPage from './pages/PlayerPage';
+import SettingsPage from './pages/SettingsPage';
 
 // --- APP CONTENT WRAPPER ---
 function AppContent() {
@@ -37,6 +38,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/settings" element={<SettingsPage />} />
       <Route path="/:type/:id" element={<DetailsPage />} />
       <Route path="/player/:type/:id" element={<PlayerPage />} />
       <Route path="/player/:type/:id/:season/:episode" element={<PlayerPage />} />
