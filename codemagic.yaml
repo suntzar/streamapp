@@ -1,45 +1,29 @@
 workflows:
   android-hybrid-app:
     name: StreamPlay Android Hybrid
+    instance_type: mac_mini_m1
     max_build_duration: 60
-    instance_type: linux_x2
-    environment:
-      node: 20
-      groups:
-        - google_play
-      vars:
-        PACKAGE_NAME: "com.streamplay.app"
     scripts:
-      - name: Install dependencies
+      - name: Build Web e Preparar www
         script: |
           npm install
-          npm install -g cordova@12.0.0
-      - name: Build Web Project
-        script: |
           npm run build
-          # Move o build do Vite para a pasta que o Cordova usa
+          # Garante que a pasta www existe e está limpa
           rm -rf www/*
+          mkdir -p www
+          # Copia o resultado do build do Vite para o Cordova
           cp -r dist/* www/
-      - name: Setup Cordova
+      - name: Construir o APK (Debug)
         script: |
-          # Limpa diretórios para evitar corrupção
+          npm install -g cordova
+          # Remove o type: module temporariamente para evitar conflitos com scripts do Cordova
+          sed -i '' '/"type": "module"/d' package.json || true
+          # Limpa e reconstrói a plataforma
           rm -rf platforms/ plugins/
-          # Adiciona a plataforma Android estável
-          cordova platform add android@12.0.1
-          # Instala os plugins de forma sequencial e limpa
-          cordova plugin add cordova-plugin-device --save
-          cordova plugin add cordova-plugin-inappbrowser --save
-          cordova plugin add https://github.com/ollm/cordova-plugin-dynamic-color --save
-      - name: Build Android APK
-        script: |
-          # Define o caminho do Java se necessário (Codemagic Linux já vem pronto)
-          cordova build android --release --no-interactive -- --packageType=apk
+          cordova platform add android --no-interactive
+          cordova plugin add cordova-plugin-device
+          cordova plugin add cordova-plugin-inappbrowser
+          cordova plugin add https://github.com/ollm/cordova-plugin-dynamic-color
+          cordova build android --debug --no-interactive
     artifacts:
-      - platforms/android/app/build/outputs/apk/release/*.apk
-    publishing:
-      email:
-        recipients:
-          - contato@ironcripto.com
-        notify:
-          success: true
-          failure: true
+      - platforms/android/app/build/outputs/apk/debug/*.apk
