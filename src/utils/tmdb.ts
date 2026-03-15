@@ -31,6 +31,26 @@ export async function searchContent(query: string): Promise<TMDBResult[]> {
   }
 }
 
+export async function getContentDetails(type: string, id: string): Promise<TMDBResult | null> {
+  if (!TMDB_API_KEY || !id) return null;
+  const mediaType = type === 'tv' || type === 'anime-show' ? 'tv' : 'movie';
+  
+  try {
+    const response = await fetch(
+      `${BASE_URL}/${mediaType}/${id}?api_key=${TMDB_API_KEY}&language=pt-BR`
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return {
+      ...data,
+      media_type: mediaType
+    };
+  } catch (error) {
+    console.error('Erro ao buscar detalhes no TMDB:', error);
+    return null;
+  }
+}
+
 export function getTMDBImageUrl(path: string | null): string {
   if (!path) return 'https://placehold.co/500x750/09090b/white?text=Sem+Poster';
   return `${IMAGE_BASE_URL}${path}`;
