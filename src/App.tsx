@@ -9,7 +9,7 @@ export default function App() {
 
   // Form State
   const [contentType, setContentType] = useState('movie');
-  const [contentId, setContentId] = useState('');
+  const [contentId, setContentId] = useState('299534');
   const [seasonNum, setSeasonNum] = useState('');
   const [episodeNum, setEpisodeNum] = useState('');
   const [themeColor, setThemeColor] = useState('');
