@@ -66,13 +66,16 @@ export function getThemePreference(): { color: string; useMaterialYou: boolean }
 
 export async function getMaterialYouColor(): Promise<string | null> {
   return new Promise((resolve) => {
-    if (typeof window !== 'undefined' && (window as any).DynamicColor) {
-      (window as any).DynamicColor.colors((colors: any) => {
+    // Verifica se o plugin existe no objeto window
+    const dynamicColor = (window as any).DynamicColor;
+    if (typeof window !== 'undefined' && dynamicColor && typeof dynamicColor.colors === 'function') {
+      dynamicColor.colors((colors: any) => {
         resolve(colors.primary || null);
       }, () => {
         resolve(null);
       });
     } else {
+      // Fallback ou Log silencioso se não estiver em ambiente nativo suportado
       resolve(null);
     }
   });

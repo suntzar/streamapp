@@ -27,5 +27,4 @@
 
   <plugin name="cordova-plugin-device" spec="^3.0.0" />
   <plugin name="cordova-plugin-inappbrowser" spec="~5.0.0" />
-  <plugin name="cordova-plugin-dynamic-color" spec="https://github.com/ollm/cordova-plugin-dynamic-color" />
 </widget>
